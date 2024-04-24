@@ -3,18 +3,20 @@ import java.util.List;
 public class BankAccount {
     private double balance;
     private String accountNumber;
+    private String username;
     public boolean isAuthenticated = false;
     public boolean isLocked = false;
     int failedLoginAttempts = 0;
     private List<String> transactionLog = new ArrayList<>();
 
-    public BankAccount(String accountNumber) {
+    public BankAccount(String accountNumber, String username) {
         this.accountNumber = accountNumber;
+        this.username = username;
         this.balance = 0.0;
     }
 
-    public void login(String password) {
-        if ("secret".equals(password)) {
+    public void login(String username, String password) {
+        if ("user".equals(username) && "secret".equals(password)) {
             isAuthenticated = true;
             transactionLog.add("Login successful");
         } else {
@@ -45,18 +47,17 @@ public class BankAccount {
         isLocked = true;
         transactionLog.add("Account locked");
     }
-
-    public void deposit(double amount) {
+    public void deposit(double amount, String source) {
         if (isAuthenticated && amount > 0) {
             balance += amount;
-            transactionLog.add("Deposited: " + amount);
+            transactionLog.add("Deposited: " + amount + " from " + source);
         }
     }
 
-    public void withdraw(double amount) {
+    public void withdraw(double amount, String reason) {
         if (isAuthenticated && amount > 0 && balance >= amount) {
             balance -= amount;
-            transactionLog.add("Withdrew: " + amount);
+            transactionLog.add("Withdrew: " + amount + " for " + reason);
         } else {
             transactionLog.add("Failed withdrawal attempt");
         }
@@ -64,9 +65,10 @@ public class BankAccount {
 
     public void transfer(BankAccount toAccount, double amount) {
         if (isAuthenticated && amount > 0 && balance >= amount) {
-            this.withdraw(amount);
-            toAccount.deposit(amount);
-            transactionLog.add("Transferred " + amount + " to " + toAccount.accountNumber);
+            this.balance -= amount;
+            toAccount.balance += amount;
+            this.transactionLog.add("Withdrew: " + amount + " for Transfer to " + toAccount.accountNumber);
+            toAccount.transactionLog.add("Deposited: " + amount + " from Transfer from " + this.accountNumber);
         } else {
             transactionLog.add("Failed transfer attempt");
         }
