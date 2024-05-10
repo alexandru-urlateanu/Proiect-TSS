@@ -1,5 +1,10 @@
 import java.util.ArrayList;
 import java.util.List;
+
+import org.mockito.Mockito;
+import org.mockito.Mockito;
+import static org.mockito.Mockito.mock;
+
 public class BankAccount {
     private double balance;
     private String accountNumber;
@@ -9,9 +14,12 @@ public class BankAccount {
     int failedLoginAttempts = 0;
     private List<String> transactionLog = new ArrayList<>();
 
-    public BankAccount(String accountNumber, String username) {
+    private TransferValidator transferValidator;
+
+    public BankAccount(String accountNumber, String username, TransferValidator transferValidator) {
         this.accountNumber = accountNumber;
         this.username = username;
+        this.transferValidator = transferValidator;
         this.balance = 0.0;
     }
 
@@ -64,15 +72,17 @@ public class BankAccount {
     }
 
     public void transfer(BankAccount toAccount, double amount) {
-        if (isAuthenticated && amount > 0 && balance >= amount) {
+        if (isAuthenticated && amount > 0 && balance >= amount &&
+                transferValidator.validateTransfer(amount, this, toAccount)) {
             this.balance -= amount;
             toAccount.balance += amount;
-            this.transactionLog.add("Withdrew: " + amount + " for Transfer to " + toAccount.accountNumber);
+            transactionLog.add("Withdrew: " + amount + " for Transfer to " + toAccount.accountNumber);
             toAccount.transactionLog.add("Deposited: " + amount + " from Transfer from " + this.accountNumber);
         } else {
             transactionLog.add("Failed transfer attempt");
         }
     }
+
 
     public double getBalance() {
         return balance;

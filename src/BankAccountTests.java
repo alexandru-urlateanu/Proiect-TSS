@@ -4,14 +4,19 @@ import org.junit.Test;
 import java.util.List;
 
 import static org.junit.Assert.*;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+import static org.mockito.Mockito.*;
 
 public class BankAccountTests {
     private BankAccount account;
+    @Mock private TransferValidator mockValidator;
+
 
     @Before
     public void setUp() {
-        account = new BankAccount("123456", "user");
-        // Reset account state for each test
+        MockitoAnnotations.initMocks(this);
+        account = new BankAccount("123456", "user", mockValidator);
         account.logoutBefore();
     }
 
@@ -37,7 +42,8 @@ public class BankAccountTests {
         account.login("testUsername", "wrong"); // Third failed authentication
         assertFalse(account.isAuthenticated());
         assertTrue(account.isLocked());
-        assertEquals(List.of("Login attempted", "Login attempted", "Login attempted", "Account locked"), account.getTransactionLog());
+        assertEquals(List.of("Login attempted", "Login attempted",
+                "Login attempted", "Account locked"), account.getTransactionLog());
     }
 
     ///Transactions tests
@@ -47,7 +53,8 @@ public class BankAccountTests {
         double amount = 100;
         account.deposit(amount, "Salary"); // Add reason for deposit
         assertEquals(amount, account.getBalance(), 0.01);
-        assertEquals(List.of("Login successful", "Deposited: " + amount + " from Salary"), account.getTransactionLog());
+        assertEquals(List.of("Login successful", "Deposited: " + amount + " from Salary"),
+                account.getTransactionLog());
     }
     @Test
     public void testDepositWhenNotAuthenticated() {
@@ -63,10 +70,11 @@ public class BankAccountTests {
         account.login("user", "secret");
         double amountDeposit = 200;
         double amountWithdraw = 150;
-        account.deposit(amountDeposit, "Salary"); // Add reason for deposit
-        account.withdraw(amountWithdraw, "Groceries"); // Add reason for withdraw
+        account.deposit(amountDeposit, "Salary");
+        account.withdraw(amountWithdraw, "Groceries");
         assertEquals(50, account.getBalance(), 0.01);
-        assertEquals(List.of("Login successful", "Deposited: " + amountDeposit + " from Salary", "Withdrew: " + amountWithdraw + " for Groceries"), account.getTransactionLog());
+        assertEquals(List.of("Login successful", "Deposited: " + amountDeposit +
+                " from Salary", "Withdrew: " + amountWithdraw + " for Groceries"), account.getTransactionLog());
     }
 
     @Test
@@ -77,21 +85,7 @@ public class BankAccountTests {
         assertTrue(account.getTransactionLog().contains("Failed withdrawal attempt"));
     }
 
-    @Test
-    public void testTransferBetweenAccounts() {
-        String accountNumber = "654321";
-        BankAccount anotherAccount = new BankAccount(accountNumber, "anotherUsername");
-        double amountDeposit = 200;
-        double amountWithdraw = 100;
-        account.login("user", "secret");
-        anotherAccount.login("anotherUsername", "secret");
-        account.deposit(amountDeposit, "Salary");
-        account.transfer(anotherAccount, amountWithdraw);
-        assertEquals(100, account.getBalance(), 0.01);
-        assertEquals(100, anotherAccount.getBalance(), 0.01);
-        assertEquals(List.of("Login successful", "Deposited: " + amountDeposit + " from Salary", "Withdrew: "
-                + amountWithdraw + " for Transfer to " + accountNumber), account.getTransactionLog());
-    }
+
 
     //Boundary values tests
     @Test
@@ -131,7 +125,47 @@ public class BankAccountTests {
         account.deposit(amountDeposit, "Salary"); // Add deposit source
         account.withdraw(amountWithdraw, "Groceries"); // Add withdraw reason
         account.logout();
-        assertEquals(List.of("Login successful", "Deposited: " + amountDeposit + " from Salary", "Withdrew: " + amountWithdraw + " for Groceries", "Logout"), account.getTransactionLog());
+        assertEquals(List.of("Login successful", "Deposited: " + amountDeposit +
+                        " from Salary", "Withdrew: " + amountWithdraw + " for Groceries", "Logout"),
+                account.getTransactionLog());
+    }
+
+    @Test
+    public void testTransferWhenValidatorAllows() {
+        when(mockValidator.validateTransfer(anyDouble(), any(BankAccount.class), any(BankAccount.class)))
+                .thenReturn(true);
+        account.login("user", "secret");
+        BankAccount anotherAccount = new BankAccount("654321", "anotherUser", mockValidator);
+        anotherAccount.login("anotherUser", "secret");
+
+        account.deposit(200.0, "Salary");
+        account.transfer(anotherAccount, 100);
+        assertEquals(100, account.getBalance(), 0.01);
+        assertEquals(100, anotherAccount.getBalance(), 0.01);
+        verify(mockValidator).validateTransfer(100, account, anotherAccount);
+    }
+
+
+
+    @Test
+    public void testTransferWhenValidatorDenies() {
+        when(mockValidator.validateTransfer(anyDouble(), any(BankAccount.class), any(BankAccount.class)))
+                .thenReturn(false);
+        account.login("user", "secret");
+        BankAccount anotherAccount = new BankAccount("654321", "anotherUser", mockValidator);
+        anotherAccount.login("anotherUser", "secret");
+        account.deposit(200.0, "Initial deposit");
+        account.transfer(anotherAccount, 100);
+        assertEquals(200.0, account.getBalance(), 0.01);
+        assertEquals(0, anotherAccount.getBalance(), 0.01);
+        verify(mockValidator).validateTransfer(100, account, anotherAccount);
     }
 
 }
+
+//specificatie+aplicare cure 1
+// cfg curs 2 + de verificat setul de teste sturcturale e minimal curs 2
+//mutatie instalere pi +imbunatarie scor
+//interpretare rezultate tool integraf couvrage si pit
+//in clip iniante de teste de mutatie si dupa si ss cu ele in doc si prezentare
+//comparare cu ai
