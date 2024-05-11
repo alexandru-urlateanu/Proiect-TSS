@@ -25,6 +25,11 @@ public class BankAccount {
     }
 
     public void login(String username, String password) {
+        if (isLocked) {
+            transactionLog.add("Login attempted - Account is locked");
+            return;
+        }
+
         if ("user".equals(username) && "secret".equals(password)) {
             isAuthenticated = true;
             transactionLog.add("Login successful");
@@ -36,6 +41,7 @@ public class BankAccount {
             }
         }
     }
+
     public boolean isAuthenticated() {
         return isAuthenticated;
     }
