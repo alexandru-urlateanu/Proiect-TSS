@@ -166,12 +166,41 @@ public class BankAccountTests {
         assertEquals(0, anotherAccount.getBalance(), 0.01);
         verify(mockValidator).validateTransfer(100, account, anotherAccount);
     }
+//mutanti
+
+    @Test
+    public void testAccountRemainsLockedAfterMultipleFailedAttempts() {
+        // Trei încercări eșuate de logare pentru a bloca contul
+        account.login("testUsername", "wrong");
+        account.login("testUsername", "wrong");
+        account.login("testUsername", "wrong");
+        assertTrue("Contul ar trebui să fie blocat după trei încercări eșuate.", account.isLocked());
+
+        // Încercări suplimentare care ar trebui să fie ignorate deoarece contul este blocat
+        account.login("user", "secret");
+        assertFalse("Autentificarea nu ar trebui să fie posibilă dacă contul este blocat.", account.isAuthenticated());
+        assertTrue("Contul ar trebui să rămână blocat.", account.isLocked());
+
+        // Verifică logul pentru a asigura că încercările suplimentare sunt înregistrate corespunzător
+        List<String> expectedLog = List.of(
+                "Login attempted", "Login attempted", "Login attempted", "Account locked", "Login attempted - Account is locked"
+        );
+        assertEquals("Jurnalul tranzacțiilor nu corespunde așteptărilor după încercări multiple de autentificare.", expectedLog, account.getTransactionLog());
+    }
+
+
+
+    @Test
+    public void testWithdrawExactBalance() {
+        account.login("user", "secret");
+        account.deposit(100, "Initial");
+        // Încearcă să retragi exact soldul contului
+        account.withdraw(100, "Exact Balance");
+        assertEquals("Soldul ar trebui să fie 0 după retragerea întregului sold", 0, account.getBalance(), 0.01);
+        // Verifică că retragerea este înregistrată corect în jurnalul de tranzacții
+        assertTrue("Jurnalul tranzacțiilor ar trebui să includă retragerea efectuată",
+                account.getTransactionLog().contains("Withdrew: 100.0 for Exact Balance"));
+    }
+
 
 }
-
-//specificatie+aplicare cure 1
-// cfg curs 2 + de verificat setul de teste sturcturale e minimal curs 2
-//mutatie instalere pi +imbunatarie scor
-//interpretare rezultate tool integraf couvrage si pit
-//in clip iniante de teste de mutatie si dupa si ss cu ele in doc si prezentare
-//comparare cu ait
