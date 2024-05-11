@@ -1,0 +1,8 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Unnamed" type="PIT" factoryName="PIT Runner" editBeforeRun="true" focusToolWindowBeforeRun="true" singleton="false" REPORT_DIR="$PROJECT_DIR$/report" SOURCE_DIRS="$PROJECT_DIR$/src" TARGET_CLASSES="" TARGET_TESTS="BankAccountTests" otherParams="--outputFormats XML,HTML" nameIsGenerated="true">
+    <module name="Proiect" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>

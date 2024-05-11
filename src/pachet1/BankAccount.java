@@ -1,9 +1,7 @@
+package pachet1;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.mockito.Mockito;
-import org.mockito.Mockito;
-import static org.mockito.Mockito.mock;
 
 public class BankAccount {
     private double balance;
@@ -16,6 +14,9 @@ public class BankAccount {
 
     private TransferValidator transferValidator;
 
+    public int getFailedLoginAttempts() {
+        return failedLoginAttempts;
+    }
     public BankAccount(String accountNumber, String username, TransferValidator transferValidator) {
         this.accountNumber = accountNumber;
         this.username = username;

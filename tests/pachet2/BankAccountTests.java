@@ -1,3 +1,6 @@
+package pachet2;
+
+import pachet1.BankAccount;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -6,6 +9,8 @@ import java.util.List;
 import static org.junit.Assert.*;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import pachet1.TransferValidator;
+
 import static org.mockito.Mockito.*;
 
 public class BankAccountTests {
@@ -32,7 +37,8 @@ public class BankAccountTests {
     public void testLoginFailure() {
         account.login("testUsername", "wrongpassword"); // Authentication with incorrect password
         assertFalse(account.isAuthenticated());
-        assertEquals(1, account.failedLoginAttempts);
+        assertEquals(1, account.getFailedLoginAttempts());
+
     }
 
     @Test
@@ -168,4 +174,4 @@ public class BankAccountTests {
 //mutatie instalere pi +imbunatarie scor
 //interpretare rezultate tool integraf couvrage si pit
 //in clip iniante de teste de mutatie si dupa si ss cu ele in doc si prezentare
-//comparare cu ai
+//comparare cu ait
