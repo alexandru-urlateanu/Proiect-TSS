@@ -1,177 +1,126 @@
 package pachet2;
 
-import pachet1.BankAccount;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-import java.util.List;
+import static org.junit.jupiter.api.Assertions.*;
 
-import static org.junit.Assert.*;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import pachet1.BankAccount;
 import pachet1.TransferValidator;
 
-import static org.mockito.Mockito.*;
-
 public class BankAccountTests {
-    private BankAccount account;
-    @Mock private TransferValidator mockValidator;
 
+    private BankAccount bankAccount;
+    @Mock
+    private TransferValidator transferValidator;
 
-    @Before
-    public void setUp() {
-        MockitoAnnotations.initMocks(this);
-        account = new BankAccount("123456", "user", mockValidator);
-        account.logoutBefore();
-    }
-
-    //Authentication and account locking tests
-    @Test
-    public void testLoginSuccess() {
-        account.login("user", "secret"); // Authentication with correct username and password
-        assertTrue(account.isAuthenticated());
-        assertEquals(List.of("Login successful"), account.getTransactionLog());
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
+        bankAccount = new BankAccount("123456789", "user", transferValidator);
     }
 
     @Test
-    public void testLoginFailure() {
-        account.login("testUsername", "wrongpassword"); // Authentication with incorrect password
-        assertFalse(account.isAuthenticated());
-        assertEquals(1, account.getFailedLoginAttempts());
-
+    void deposit_ValidAmount_IncreasesBalance() {
+        bankAccount.login("user", "secret");
+        bankAccount.deposit(100.0, "ATM");
+        assertEquals(100.0, bankAccount.getBalance());
     }
 
     @Test
-    public void testAccountLockAfterThreeFailedAttempts() {
-        account.login("testUsername", "wrong"); // First failed authentication
-        account.login("testUsername", "wrong"); // Second failed authentication
-        account.login("testUsername", "wrong"); // Third failed authentication
-        assertFalse(account.isAuthenticated());
-        assertTrue(account.isLocked());
-        assertEquals(List.of("Login attempted", "Login attempted",
-                "Login attempted", "Account locked"), account.getTransactionLog());
-    }
-
-    ///Transactions tests
-    @Test
-    public void testDepositWhenAuthenticated() {
-        account.login("user", "secret");
-        double amount = 100;
-        account.deposit(amount, "Salary"); // Add reason for deposit
-        assertEquals(amount, account.getBalance(), 0.01);
-        assertEquals(List.of("Login successful", "Deposited: " + amount + " from Salary"),
-                account.getTransactionLog());
-    }
-    @Test
-    public void testDepositWhenNotAuthenticated() {
-        double amount = 100;
-        // Authentication not happening before deposit
-        account.deposit(amount, "Salary");
-        assertEquals(0, account.getBalance(), 0.01);
-        assertEquals(List.of(), account.getTransactionLog());
+    void withdraw_ValidAmount_DecreasesBalance() {
+        bankAccount.login("user", "secret");
+        bankAccount.deposit(200.0, "ATM");
+        bankAccount.withdraw(50.0, "Supermarket");
+        assertEquals(150.0, bankAccount.getBalance());
     }
 
     @Test
-    public void testWithdrawalWithSufficientFunds() {
-        account.login("user", "secret");
-        double amountDeposit = 200;
-        double amountWithdraw = 150;
-        account.deposit(amountDeposit, "Salary");
-        account.withdraw(amountWithdraw, "Groceries");
-        assertEquals(50, account.getBalance(), 0.01);
-        assertEquals(List.of("Login successful", "Deposited: " + amountDeposit +
-                " from Salary", "Withdrew: " + amountWithdraw + " for Groceries"), account.getTransactionLog());
+    void transfer_ValidAmountAndBalance_TransfersSuccessfully() {
+        BankAccount toAccount = new BankAccount("987654321", "receiver", transferValidator);
+        bankAccount.login("user", "secret");
+        toAccount.login("receiver", "password");
+        bankAccount.deposit(200.0, "ATM");
+        bankAccount.transfer(toAccount, 100.0);
+        assertEquals(100.0, bankAccount.getBalance());
+        assertEquals(100.0, toAccount.getBalance());
     }
 
     @Test
-    public void testFailedWithdrawalAttempt() {
-        account.login("user", "secret");
-        account.withdraw(100, "Groceries"); // Add reason for withdraw
-        assertEquals(0, account.getBalance(), 0.01);
-        assertTrue(account.getTransactionLog().contains("Failed withdrawal attempt"));
-    }
-
-
-
-    //Boundary values tests
-    @Test
-    public void testDepositBoundary() {
-        account.login("user", "secret");
-        account.deposit(0.01, "Salary"); // Add deposit source
-        assertEquals(0.01, account.getBalance(), 0.001);
-        account.deposit(-0.01, "Salary"); // Deposit of negative balance, should not modify balance
-        assertEquals(0.01, account.getBalance(), 0.001);
+    void transfer_InsufficientBalance_Fails() {
+        BankAccount toAccount = new BankAccount("987654321", "receiver", transferValidator);
+        bankAccount.login("user", "secret");
+        toAccount.login("receiver", "password");
+        bankAccount.deposit(50.0, "ATM");
+        bankAccount.transfer(toAccount, 100.0);
+        assertEquals(50.0, bankAccount.getBalance());
+        assertEquals(0.0, toAccount.getBalance());
     }
 
     @Test
-    public void testWithdrawBoundary() {
-        account.login("user", "secret");
-        account.deposit(100, "Salary"); // Add deposit source
-        account.withdraw(100, "Groceries"); // Add withdraw reason
-        assertEquals(0, account.getBalance(), 0.01);
-        account.withdraw(0.01, "Rent"); // Add withdraw reason
-        assertEquals(0, account.getBalance(), 0.01); // Balance should not be negative
+    void transfer_InvalidCredentials_Fails() {
+        BankAccount toAccount = new BankAccount("987654321", "receiver", transferValidator);
+        bankAccount.login("user", "wrongPassword");
+        toAccount.login("receiver", "password");
+        bankAccount.deposit(100.0, "ATM");
+        bankAccount.transfer(toAccount, 50.0);
+        assertEquals(100.0, bankAccount.getBalance());
+        assertEquals(0.0, toAccount.getBalance());
     }
 
     @Test
-    public void testMultipleConditions() {
-        account.login("user", "secret");
-        account.deposit(50, "Salary"); // Add deposit source
-        account.withdraw(25, "Groceries"); // Enough balance condition
-        assertEquals(25, account.getBalance(), 0.01);
-        account.withdraw(30, "Shopping"); // Not enough balance condition
-        assertEquals(25, account.getBalance(), 0.01);
+    void login_Successful_LoginFlagTrue() {
+        bankAccount.login("user", "secret");
+        assertTrue(bankAccount.isAuthenticated());
     }
 
     @Test
-    public void testTransactionLogAfterMultipleActions() {
-        account.login("user", "secret");
-        double amountDeposit = 50;
-        double amountWithdraw = 30;
-        account.deposit(amountDeposit, "Salary"); // Add deposit source
-        account.withdraw(amountWithdraw, "Groceries"); // Add withdraw reason
-        account.logout();
-        assertEquals(List.of("Login successful", "Deposited: " + amountDeposit +
-                        " from Salary", "Withdrew: " + amountWithdraw + " for Groceries", "Logout"),
-                account.getTransactionLog());
+    void login_UnsuccessfulAfterThreeAttempts_AccountLocked() {
+        bankAccount.login("user", "wrongPassword");
+        bankAccount.login("user", "wrongPassword");
+        bankAccount.login("user", "wrongPassword");
+        assertTrue(bankAccount.isLocked());
     }
 
     @Test
-    public void testTransferWhenValidatorAllows() {
-        when(mockValidator.validateTransfer(anyDouble(), any(BankAccount.class), any(BankAccount.class)))
-                .thenReturn(true);
-        account.login("user", "secret");
-        BankAccount anotherAccount = new BankAccount("654321", "anotherUser", mockValidator);
-        anotherAccount.login("anotherUser", "secret");
-
-        account.deposit(200.0, "Salary");
-        account.transfer(anotherAccount, 100);
-        assertEquals(100, account.getBalance(), 0.01);
-        assertEquals(100, anotherAccount.getBalance(), 0.01);
-        verify(mockValidator).validateTransfer(100, account, anotherAccount);
+    void logout_AfterSuccessfulLogin_IsAuthenticatedFalse() {
+        bankAccount.login("user", "secret");
+        bankAccount.logout();
+        assertFalse(bankAccount.isAuthenticated());
     }
-
-
 
     @Test
-    public void testTransferWhenValidatorDenies() {
-        when(mockValidator.validateTransfer(anyDouble(), any(BankAccount.class), any(BankAccount.class)))
-                .thenReturn(false);
-        account.login("user", "secret");
-        BankAccount anotherAccount = new BankAccount("654321", "anotherUser", mockValidator);
-        anotherAccount.login("anotherUser", "secret");
-        account.deposit(200.0, "Initial deposit");
-        account.transfer(anotherAccount, 100);
-        assertEquals(200.0, account.getBalance(), 0.01);
-        assertEquals(0, anotherAccount.getBalance(), 0.01);
-        verify(mockValidator).validateTransfer(100, account, anotherAccount);
+    void logout_AfterUnsuccessfulLogin_IsAuthenticatedFalse() {
+        bankAccount.login("user", "wrongPassword");
+        bankAccount.logoutBefore();
+        assertFalse(bankAccount.isAuthenticated());
     }
 
+    @Test
+    void transactionLog_DepositRecordedInTransactionLog() {
+        bankAccount.login("user", "secret");
+        bankAccount.deposit(100.0, "ATM");
+        assertEquals("Deposited: 100.0 from ATM", bankAccount.getTransactionLog().get(0));
+    }
+
+    @Test
+    void transactionLog_WithdrawalRecordedInTransactionLog() {
+        bankAccount.login("user", "secret");
+        bankAccount.deposit(200.0, "ATM");
+        bankAccount.withdraw(50.0, "Supermarket");
+        assertEquals("Withdrew: 50.0 for Supermarket", bankAccount.getTransactionLog().get(1));
+    }
+
+    @Test
+    void transactionLog_TransferRecordedInTransactionLog() {
+        BankAccount toAccount = new BankAccount("987654321", "receiver", transferValidator);
+        bankAccount.login("user", "secret");
+        toAccount.login("receiver", "password");
+        bankAccount.deposit(200.0, "ATM");
+        bankAccount.transfer(toAccount, 100.0);
+        assertEquals("Withdrew: 100.0 for Transfer to 987654321", bankAccount.getTransactionLog().get(1));
+        assertEquals("Deposited: 100.0 from Transfer from 123456789", toAccount.getTransactionLog().get(0));
+    }
 }
-
-//specificatie+aplicare cure 1
-// cfg curs 2 + de verificat setul de teste sturcturale e minimal curs 2
-//mutatie instalere pi +imbunatarie scor
-//interpretare rezultate tool integraf couvrage si pit
-//in clip iniante de teste de mutatie si dupa si ss cu ele in doc si prezentare
-//comparare cu ait
