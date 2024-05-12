@@ -1,0 +1,9 @@
+Verificarea testelor structurale
+
+S-a folosit Pit Runner care ofera o analiza detaliata asupra acoperirii testelor structuraale.
+
+Line Coverage- Procentul este de 100%, toate linii de cod din clasa principala au fost rulate cel putin o data in timpul testarii.
+
+Mutation Coverage- Procentul este de 84%, majoritatea mutatiilor introduse de Pit au fost detectate de teste.
+
+Test Strenght- Procentul este de 84%, testele au o buna capacitatea de a detecta schimbarule in comportamentul codului
